@@ -1,4 +1,4 @@
 photo
 =====
 
-photo-z's
+photometric redshifts using SDSS, WISE, and 2MASS.
