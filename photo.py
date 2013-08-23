@@ -29,19 +29,22 @@ def make_irsa_table(filename=datapath+'atlas_0p05_to_1p0.csv', ngals=None, shuff
     fileout.close()
 
 
-def read_sdss(filename):
+def read_sdss(filename, keys2use = ['redshift','objid','u','g','r','i','z','petroR50_r','petroR90_r','expAB_r']):
+    dtype = {k:float for k in keys2use}
+    dtype['objid']=int
     print '...reading '+filename+'...'
     import csv
     f = open(filename,'r')
     reader = csv.reader(f)
     keys = reader.next()
-    d = {key:[] for key in keys}
+    dkey = {}
+    for itmp,key in enumerate(keys): dkey[key]=itmp
+    ind2use = [dkey[key] for key in keys2use]
+    d = {}
     for line in reader:
-        for key,val in zip(keys,line):
-            d[key].append(np.float(val))
-    for k,v in d.iteritems(): d[k] = np.array(v,dtype='float')
-    id = np.arange(len(d[d.keys()[0]]), dtype=int)
-    d['id'] = id
+        this_d = {}
+        for key,ind in zip(keys2use,ind2use): this_d[key] = map(dtype[key],[line[ind]])[0]
+        d[int(this_d['objid'])]=this_d
     return d
 
    
@@ -163,6 +166,8 @@ def main(filename=datapath+'atlas_0p05_to_1p0.csv',
 
     # get data
     d = read_sdss(filename)
+    ipdb.set_trace()
+
 
     # get wise data
     wise=read_wise(datapath+'wise_100000gals_0p05_to_1p0.txt',quick=True)
