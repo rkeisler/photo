@@ -172,14 +172,14 @@ def main(filename=datapath+'atlas_0p05_to_1p0.csv',
 
     # summary vs redshift, and vs r-magnitude.
     zbin, zbias, zbias2, zsigma, zsigma68 = summary_vs_redshift(y_test, diff)
-    r_ind = 0
-    r_test = X_test[:,r_ind]
-    rbin, rbias, rbias2, rsigma, rsigma68 = summary_vs_r(r_test, diff)
+    #r_ind = 0
+    #r_test = X_test[:,r_ind]
+    #rbin, rbias, rbias2, rsigma, rsigma68 = summary_vs_r(r_test, diff)
     
     # if desired, plot some stuff.
     if doPlot: plot_summary(y_test, predict_test, y_train, diff, 
-                            zbin, zbias, zbias2, zsigma, zsigma68, 
-                            rbin, rbias, rbias2, rsigma, rsigma68)
+                            zbin, zbias, zbias2, zsigma, zsigma68)
+#                            rbin, rbias, rbias2, rsigma, rsigma68)
     ipdb.set_trace()
 
 
@@ -249,8 +249,8 @@ def summary_vs_r(r_test, diff):
     return rbin, rbias, rbias2, rsigma, rsigma68
 
 def plot_summary(y_test, predict_test, y_train, diff, 
-                 zbin, zbias, zbias2, zsigma, zsigma68, 
-                 rbin, rbias, rbias2, rsigma, rsigma68):
+                 zbin, zbias, zbias2, zsigma, zsigma68):
+#                 rbin, rbias, rbias2, rsigma, rsigma68):
     pl.ion()
     pl.figure(1, figsize=(15.5, 9.5))
     pl.clf()
@@ -266,7 +266,7 @@ def plot_summary(y_test, predict_test, y_train, diff,
     pl.plot(y_test, diff,'.')
     pl.plot([0,2],[0,0],'k--',linewidth=5)
     pl.xlim(y_train.min(), y_train.max())
-    pl.ylim(np.array([-1,1])*0.05)
+    pl.ylim(np.array([-1,1])*0.1)
     pl.xlabel('specZ')
     pl.ylabel('photoZ-specZ')
 
@@ -278,10 +278,9 @@ def plot_summary(y_test, predict_test, y_train, diff,
     pl.plot(zbin, zbias2,'g')
     pl.plot([0,2],[0,0],'k--',linewidth=5)
     pl.xlim(y_train.min(), y_train.max())
-    pl.ylim(np.array([-1,1])*0.05)
+    pl.ylim(np.array([-1,1])*0.1)
     pl.xlabel('specZ')
     pl.ylabel('bias')
-
 
     pl.subplot(325)
     pl.plot(zbin, zsigma,'ro')
@@ -290,35 +289,34 @@ def plot_summary(y_test, predict_test, y_train, diff,
     pl.plot(zbin, zsigma,'r')
     pl.plot(zbin, zsigma68,'g')
     pl.xlim(y_train.min(), y_train.max())
-    pl.ylim(0.0, 0.05)
+    pl.ylim(0.0, 0.1)
     pl.xlabel('specZ')
     pl.ylabel('sigma')
+    
+    if False:
 
+        pl.subplot(324)
+        pl.plot(rbin, rbias,'ro')
+        pl.plot(rbin, rbias2,'go')
+        pl.legend(['mean','median'])
+        pl.plot(rbin, rbias,'r')
+        pl.plot(rbin, rbias2,'g')
+        pl.plot([0,30],[0,0],'k--',linewidth=5)
+        pl.xlim(np.min(rbin), np.max(rbin))
+        pl.ylim(np.array([-1,1])*0.05)
+        pl.xlabel('r')
+        pl.ylabel('bias')
 
-
-    pl.subplot(324)
-    pl.plot(rbin, rbias,'ro')
-    pl.plot(rbin, rbias2,'go')
-    pl.legend(['mean','median'])
-    pl.plot(rbin, rbias,'r')
-    pl.plot(rbin, rbias2,'g')
-    pl.plot([0,30],[0,0],'k--',linewidth=5)
-    pl.xlim(np.min(rbin), np.max(rbin))
-    pl.ylim(np.array([-1,1])*0.05)
-    pl.xlabel('r')
-    pl.ylabel('bias')
-
-
-    pl.subplot(326)
-    pl.plot(rbin, rsigma,'ro')
-    pl.plot(rbin, rsigma68,'go')
-    pl.legend(['RMS','68%'])
-    pl.plot(rbin, rsigma,'r')
-    pl.plot(rbin, rsigma68,'g')
-    pl.xlim(np.min(rbin), np.max(rbin))
-    pl.ylim(0.0, 0.05)
-    pl.xlabel('r')
-    pl.ylabel('sigma')
+        pl.subplot(326)
+        pl.plot(rbin, rsigma,'ro')
+        pl.plot(rbin, rsigma68,'go')
+        pl.legend(['RMS','68%'])
+        pl.plot(rbin, rsigma,'r')
+        pl.plot(rbin, rsigma68,'g')
+        pl.xlim(np.min(rbin), np.max(rbin))
+        pl.ylim(0.0, 0.05)
+        pl.xlabel('r')
+        pl.ylabel('sigma')
 
 
 
@@ -347,7 +345,7 @@ def get_feautres(d, surveys=['sdss','wise','2mass']):
         w3 = np.array([v['w3'] for v in d.values()])
         w4 = np.array([v['w4'] for v in d.values()])
         # EDIT FEATURES HERE
-        tmp = np.vstack((w2, w1-w2, w2-w3, w3-w4))
+        tmp = np.vstack((w2, w1-w2, w2-w3, w4))
         if X==None: X=tmp
         else: X=np.vstack((X,tmp))
 
