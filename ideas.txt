@@ -1,0 +1,235 @@
+- how much better is it trained with full 1M samples?
+- try NN
+
+adding WISE to SDSS gives you about 10% improvement, although possibly
+larger at z~0.5.  WISE on its own gives sigma68 of ~0.08 at z=0.55,
+compared to ~0.05 in Ho et al.  
+
+create a new project that predicts whether or not a WISE source is an SDSS LRG.  then you should be able to produce a list of "SDSS LRG's", but over the whole sky.  then you can benefit from all of the past work done on those objects.  that's a paper in itself.
+
+then, finally, you could do "angular power spectrum of LRG-like WISE galaxies at z~0.55", using WISE+2MASS photo-z's.  going after angular BAO scale a la Ho et al., obviously.
+
+i actually don't know what the accuracy of my WISE photo-z would be if it were predicting only LRGs.
+
+
+-------------------------------------------------------
+SDSS bands: 0.36, 0.47, 0.62, 0.75, 0.89 um (ugriz)
+
+All-sky-surveys:
+WISE: 3.4, 4.6, 12, 22 um,		563,000,000
+2MASS: 1.25, 1.65, 2.17 um (JHK)	300,000,000
+IRAS: 12, 25, 60, 100 um		250,000
+
+
+AKARI cat: 9, 18 um
+
+
+using 100k gals.  training on 0.8 of them, testing on 0.2 of them:
+eRF, n_estimators=30, default max_depth and max_features.
+
+data:		diff.std(), np.sqrt(np.median(diff**2.))/0.68
+SDSS:			0.039622783986  0.0232875980392
+SDSS+SHAPE:		0.037220933149  0.0217161764706
+SDSS+SHAPE+WISE:	0.034262088022  0.0192296323529
+WISE:			0.112858470608  732.-0.0601783088235
+
+NB: for regressors, max_depth=n_features is default, whereas for classifiers it's sqrt(n_features).
+
+fix SDSS+SHAPE+WISE, eRF, n_est=30, def. max_features, but vary depth:
+3,	0.0598270020733 0.0505145978005
+6,	0.0478977807514 0.0343929657567
+12, 	0.0363699708692 0.0221016420737
+16, 	0.0346259589663 0.0195905998018
+24, 	0.0342982569451 0.0193965975775
+auto, 	0.034262088022  0.0192296323529
+
+fix SDSS+SHAPE+WISE, eRF, n_est=30, def. max_depth, but vary max_features:
+0.03	0.0442319974053 0.0272435784314
+0.06	0.0402623081892 0.0238009803922
+0.12	0.0376104019153 0.0217556617647
+0.18	0.0366761312603 0.0208570588235
+0.30	0.0354785334004 0.0200454656863
+0.50	0.0348456202321 0.0195978921569
+0.75	0.0343735492630 0.0193849019608
+1.00	0.0344118710507 0.0194007107843
+
+fix SDSS+SHAPE+WISE, eRF, max_depth, max_feat to auto, but vary n_est:
+30	0.0337403682712 0.0194429166667
+80	0.0332246551677 0.019051875
+200	0.0331738064064 0.0189103492647
+
+
+1159646 gals
+(rms, sigma68)
+0.0369405833797 0.0227427988175 (31 summary features)
+0.0393776599613 0.0248378551891 (50 codes, right way)
+0.0621960924748 0.0420205842665 (50 codes, wrong way)
+
+
+
+runs of 30:
+1 jobs: 124s
+2 jobs: 126s
+4 jobs: 150s
+
+
+figure out how you would extract centered, calibrated images from atlas images.  if that looks promising, then you'd choose ~60k galaxies from some z range (0.05 to 0.3?), download/process/save-to-ebs on amazon.
+
+ssh root@node001 "cd /data/;time python tmp.py 50 >& log1 &" &
+
+http://www.cs.toronto.edu/~nitish/deepnet/
+how does sigma or sigma68 scale with r magnitude?
+
+-----
+train on ~115k 0.0387790996823 0.0238710892225
+train on ~935k 0.0374969600756 0.0230038148745
+-------
+Imaging Data
+Images and derived catalog data are described on the imaging data page. You can use a SkyServer search or the file window_flist.fits file to identify which RERUN-RUN-CAMCOL-FIELD overlaps your region of interest. Then download the matching calibObj files (catalog data) or frame files (calibrated imaging data), e.g., for RERUN 301, RUN 2505, CAMCOL 3, FIELD 38, the r-band image is:
+
+  wget --spider http://data.sdss3.org/sas/dr9/boss/photoObj/frames/301/2505/3/frame-r-002505-3-0038.
+
+http://www.sdss3.org/dr8/imaging/images.php#corr
+table of memory/disk usage: http://www.sdss3.org/dr8/data_access.php
+
+http://data.sdss3.org/sas/dr9/boss/photoObj/frames/301/6727/3/
+
+http://skyserver.sdss3.org/dr9/en/tools/chart/list.asp
+
+SQL
+columns in photo table: 
+http://skyserver.sdss3.org/dr8/en/help/browser/browser.asp
+(http://cas.sdss.org/dr4/en/help/browser/description.asp?n=PhotoObjAll&t=U)
+
+
+14<r<21, rerun=301, type=3, zWarning=0:
+0.05 to 0.15:	483149
+0.15 to 0.4:	339786
+0.40 to 1.0:	336711
+-------------------------
+0.05 to 1.0:	1159646
+
+
+r>21 galaxies with spec-z's:
+0.05 to 0.1:	256962
+0.1 to 0.2:	350116
+0.2 to 0.4: 	218020
+0.4 to 0.6: 	287322
+0.6 to 0.8: 	57358
+0.8 to 1.0:	1526
+------------------------
+0.05 to 1.0:	1171304
+
+
+r>20 galaxies with spec-z's:
+0.05 to 0.1:	256416
+0.1 to 0.2:	348592
+0.2 to 0.4: 	209048
+0.4 to 0.6: 	87337
+0.6 to 0.8: 	2849
+0.8 to 1.0:	421
+------------------------
+0.05 to 1.0:	904663
+
+---
+SELECT 
+   s.z as redshift,
+   p.run, p.camcol, p.obj, p.objid, p.field, 
+   p.nMgyPerCount_u, nMgyPerCount_g, nMgyPerCount_r, nMgyPerCount_i, nMgyPerCount_z,
+   p.u,p.g,p.r,p.i,p.z,
+   s.specobjid, p.mjd, p.ra, p.dec,
+   p.expAB_u, p.expAB_g, p.expAB_r, p.expAB_i, p.expAB_z,
+   p.petroR50_u, p.petroR50_g, p.petroR50_r, p.petroR50_i, p.petroR50_z,
+   p.petroR90_u, p.petroR90_g, p.petroR90_r, p.petroR90_i, p.petroR90_z
+FROM PhotoObj AS p
+   JOIN SpecObj AS s ON s.bestobjid = p.objid
+WHERE 
+   s.z >= 0.05
+   AND s.z<0.1
+   AND s.zWarning=0
+   AND p.r<21
+   AND p.r>14
+   AND p.rerun=301
+   AND type=3
+---
+SELECT 
+   s.z as redshift,
+   p.objid,p.u,p.g,p.r,p.i,p.z,
+   s.specobjid, 
+   s.mjd, 
+   p.expAB_u, p.expAB_g, p.expAB_r, p.expAB_i, p.expAB_z,
+   p.petroR50_u, p.petroR50_g, p.petroR50_r, p.petroR50_i, p.petroR50_z,
+   p.petroR90_u, p.petroR90_g, p.petroR90_r, p.petroR90_i, p.petroR90_z
+FROM PhotoObj AS p
+   JOIN SpecObj AS s ON s.bestobjid = p.objid
+WHERE 
+   s.z BETWEEN 0.05 and 0.1
+   AND r BETWEEN 0 AND 21
+   AND type=3
+---
+SELECT
+   s.z as redshift,
+   p.objid,p.u,p.g,p.r,p.i,p.z,
+   s.specobjid, 
+   s.mjd, 
+   p.expAB_u, p.expAB_g, p.expAB_r, p.expAB_i, p.expAB_z,
+   p.petroR50_u, p.petroR50_g, p.petroR50_r, p.petroR50_i, p.petroR50_z,
+   p.petroR90_u, p.petroR90_g, p.petroR90_r, p.petroR90_i, p.petroR90_z
+FROM PhotoObj AS p
+   JOIN SpecObj AS s ON s.bestobjid = p.objid
+WHERE 
+   s.z BETWEEN 0.4 and 0.5
+   AND r BETWEEN 0 AND 20
+   AND class=3
+---
+SELECT 
+   p.objid,p.u,p.g,p.r,p.i,p.z,
+   s.specobjid, s.class, s.z as redshift,
+   s.mjd, p.expAB_r
+FROM PhotoObj AS p
+   JOIN SpecObj AS s ON s.bestobjid = p.objid
+WHERE 
+   s.z BETWEEN 0.4 and 0.5
+   AND g BETWEEN 0 AND 20
+---
+SELECT count(*)
+FROM SpecObj AS s
+WHERE 
+   s.class="GALAXY"
+   AND s.z > 0.0
+---
+
+
+-----------------------------------
+
+
+- training a NN or RF to predict redshift given BOSS spectra.  should be pretty easy.  should the NN be convolutional?
+
+- autoencoding or sparse filtering BOSS spectra to one output.  does that output correlate with redshift?  should the NN be convolutional?  i bet you'll need a multi-layer network.
+
+- training a NN or RF to predict photometric redshift of LRG's or some other galaxy sample.  or course this has been done.  can you beat it?
+
+- train conv NN to predict photometric redshift using 4-band image.
+
+- kaggle competition to predict photometric redshifts for SDSS or DES.  tricky thing about SDSS is, yes, the data is public, so i don't need to ask anybody, but people could cheat.  they try to find the spectra that matches the input spectrum, and then they'd know the redshift.  you could scramble in wavelength, but then you've made the problem more difficult.  furthermore, people could solve for the scrambling.  what if you hit each wavelength with a non-linear function, then scrambled?  anyway, DES would be nice, because the public wouldn't know the answer.
+
+- what's the max-likelihood expectation for photo-z error?  assume fixed galaxy template.  only noise is from the image having some depth ("instrumental/sky" noise in CMB speak).
+
+- convolutional NN on images of galaxies or galaxy clusters to learn about morphology or redshift.  e.g. spectrum could depend on spiral/elliptical or the viewing angle, either of which could be detected in the image, but not in the features that have been used in the past.  20''x20'' is about right.  default pixel scale is 0.4'' per pixel, but i think 0.8'' would be fine, then i could get 24x24 pixels.  do i need to de-redden?
+
+- predict photometric redshifts of galaxy clusters using photometry of members and/or all objects in the field.  it should be able to discover the red sequence.  could use MaxBCG or redMapper, with eye towards DES.
+
+GPU STUFF:
+https://help.ubuntu.com/community/Cuda
+https://github.com/dnouri
+https://code.google.com/p/cuda-convnet/
+https://github.com/dnouri/cuda-convnet/blob/master/README.rst
+http://www.cs.toronto.edu/~gdahl/
+http://www.cs.toronto.edu/~tijmen/gnumpy.html
+https://dl.dropboxusercontent.com/u/28927416/gnumpy__NumPy%20at%20GPU_speed.pdf
+https://www.kaggle.com/c/job-salary-prediction/forums/t/4208/congratulations-to-the-preliminary-winners?page=3
+http://blog.kaggle.com/2012/11/01/deep-learning-how-i-did-it-merck-1st-place-interview/
+http://jmdana.github.io/memprof/ (python memory profiler)
+- numba speedup: http://jakevdp.github.io/blog/2013/06/15/numba-vs-cython-take-2/
+
+according to David Hogg, "Maayane Soumagnac (UCL) visited for a few hours to discuss her projects on classification and inference in the Dark Energy Survey. She is using artificial neural networks, but wants to compete them or compare them with Bayesian methods that involve modeling the data probabilistically."
