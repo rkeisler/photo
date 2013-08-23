@@ -8,29 +8,28 @@ datapath = '/data/photo_data/'
 
 
 def make_irsa_table(filename=datapath+'atlas_0p05_to_1p0.csv', ngals=None, shuffle=True):
-    # get data
-    d = read_sdss(filename)
-    ngals_total = len(d['ra'])
-    if ngals==None: ngals=ngals_total
-    # grab a random (sub)set
-    ind = np.arange(ngals_total, dtype=int)
+    # get SDSS data
+    d = read_sdss(filename,keys2grab=['ra','dec'])
+    id = d.keys()
     if shuffle:
         np.random.seed(3)
-        np.random.shuffle(ind)
-    ind = ind[0:ngals]
+        np.random.shuffle(id)        
+    ngals_total = len(id)
+    if ngals==None: ngals=ngals_total
     tmp = filename.split('.')[0]
     tmp = tmp.split('_')
-    zrange = tmp[1]+'_to_'+tmp[3]
+    zrange = tmp[-3]+'_to_'+tmp[-1]
     savename = datapath + 'irsa_table_'+zrange+'_%igals.txt'%ngals
     fileout = open(savename,'w')
-    fileout.write('|cntr     |ra        |dec            |\n')
-    for j in ind:
-        fileout.write(' %7i   %9.5f  %9.5f\n'%(j,d['ra'][j],d['dec'][j]))
+    fileout.write('|cntr    |ra        |dec            |\n')
+    for j in range(ngals):
+        this_d = d[id[j]]
+        fileout.write(' %7i   %9.5f  %9.5f\n'%(id[j], this_d['ra'], this_d['dec']))
     fileout.close()
 
 
-def read_sdss(filename, keys2use = ['redshift','objid','u','g','r','i','z','petroR50_r','petroR90_r','expAB_r']):
-    dtype = {k:float for k in keys2use}
+def read_sdss(filename, keys2grab = ['redshift','objid','u','g','r','i','z','petroR50_r','petroR90_r','expAB_r']):
+    dtype = {k:float for k in keys2grab}
     dtype['objid']=int
     print '...reading '+filename+'...'
     import csv
@@ -39,27 +38,32 @@ def read_sdss(filename, keys2use = ['redshift','objid','u','g','r','i','z','petr
     keys = reader.next()
     dkey = {}
     for itmp,key in enumerate(keys): dkey[key]=itmp
-    ind2use = [dkey[key] for key in keys2use]
+    ind2use = [dkey[key] for key in keys2grab]
     d = {}
+    this_id = -1
     for line in reader:
+        this_id += 1
         this_d = {}
-        for key,ind in zip(keys2use,ind2use): this_d[key] = map(dtype[key],[line[ind]])[0]
-        d[int(this_d['objid'])]=this_d
+        for key,ind in zip(keys2grab,ind2use): this_d[key] = map(dtype[key],[line[ind]])[0]
+        d[this_id] = this_d
     return d
 
-   
-def read_wise(filename, quick=True):
+
+
+def read_wise_and_2mass(filename, quick=False):
     savename = filename.split('.')[0]+'.pkl'
     if quick: return pickle.load(open(savename,'r'))
+
+    default_mag=50.0
     f=open(filename,'r')
     d = {}
     for line in f:
         if 'ra_01' in line:
-            tmp = line.replace('|','')
+            tmp = line.replace('|',' ')
             keys = tmp.split()
             for key in keys: d[key]=[]
         if 'double' in line:
-            tmp = line.replace('|','')
+            tmp = line.replace('|',' ')
             dtypes = tmp.split()
         if ('\\' in line) | ('|' in line): continue
         tmp = line.split()
@@ -69,7 +73,7 @@ def read_wise(filename, quick=True):
             if dtype=='char': d[key].append(thing)
             if dtype=='int': d[key].append(int(thing))
             if dtype=='double': 
-                if thing=='null': thing=20.
+                if thing=='null': thing=default_mag
                 d[key].append(float(thing))
     f.close()
 
@@ -88,177 +92,69 @@ def read_wise(filename, quick=True):
             output[this_cntr] = {'w1':d['w1mpro'][wh], 
                                  'w2':d['w2mpro'][wh],
                                  'w3':d['w3mpro'][wh], 
-                                 'w4':d['w4mpro'][wh]}
+                                 'w4':d['w4mpro'][wh],
+                                 'j':d['j_m_2mass'][wh],
+                                 'h':d['h_m_2mass'][wh],
+                                 'k':d['k_m_2mass'][wh]}
         else:
             c_ra = d['ra_01'][wh[0]]
             c_dec = d['dec_01'][wh[0]]
             cos_tmp = np.cos(c_dec*np.pi/180.)
             dmin=9e9
             for ind in wh:
-                this_d = ((c_ra-d['ra'][ind])*cos_tmp)**2. + (c_dec-d['dec'][ind])**2.
+                this_d = d['dist_x'][ind]
+                #this_d = ((c_ra-d['ra'][ind])*cos_tmp)**2. + (c_dec-d['dec'][ind])**2.
                 if this_d<dmin:
                     dmin=this_d
                     ind2use=ind
             output[this_cntr] = {'w1':d['w1mpro'][ind2use], 
                                  'w2':d['w2mpro'][ind2use],
                                  'w3':d['w3mpro'][ind2use], 
-                                 'w4':d['w4mpro'][ind2use]}
+                                 'w4':d['w4mpro'][ind2use],
+                                 'j':d['j_m_2mass'][ind2use],
+                                 'h':d['h_m_2mass'][ind2use],
+                                 'k':d['k_m_2mass'][ind2use]}
+
+    # finally, replace the default null value with the minimum flux
+    # seen per band.
+    print '...fixing default...'
+    kk=output.keys()
+    bands = output[kk[0]].keys()
+    default_wm_dict = {}
+    for band in bands:
+        tmp = np.array([vv[band] for vv in output.values()])
+        true_max = np.max(tmp[np.where(tmp<default_mag)[0]])
+        default_wm_dict[band]=true_max
+        for k,v in output.iteritems():
+            if (v[band]>=true_max): output[k][band]=true_max
+
     print '...saving...'
-    pickle.dump(output,open(savename,'w'))
-    return output
-                    
-
-
-def read_2mass(filename, quick=True):
-    savename = filename.split('.')[0]+'.pkl'
-    if quick: return pickle.load(open(savename,'r'))
-
-    f=open(filename,'r')
-    d = {}
-    for line in f:
-        if 'ra_01' in line:
-            tmp = line.replace('|',' ')
-            keys = tmp.split()
-            for key in keys: d[key]=[]
-        if 'double' in line:
-            tmp = line.replace('|',' ')
-            dtypes = tmp.split()
-        if ('\\' in line) | ('|' in line): continue
-
-        tmp = line.split()
-        for ikey,thing in enumerate(tmp):
-            key = keys[ikey]
-            dtype = dtypes[ikey]
-            if dtype=='char': d[key].append(thing)
-            if dtype=='int': d[key].append(int(thing))
-            if dtype=='double': 
-                if thing=='null': thing=20.
-                if thing=='-': thing=-1.
-                d[key].append(float(thing))
-    f.close()
-
-
-    # now create the output dictionary.  the keys are the cntr_01, and
-    # the values are the four WISE magnitudes.  for each unique
-    # cntr_01, find all matches and take the closest one.
-    cntrs = np.array(d['cntr_01'])
-    output = {}
-    count=0
-    nuniq = len(set(cntrs))
-    for this_cntr in set(cntrs):
-        count += 1
-        if (count % 10000)==0: print count,nuniq
-        wh=np.where(cntrs==this_cntr)[0][0]
-        output[this_cntr] = {'j':d['j_m'][wh], 
-                             'h':d['h_m'][wh],
-                             'k':d['k_m'][wh]}
-    print '...saving...'
-    pickle.dump(output,open(savename,'w'))
-    return output
-
+    pickle.dump((output, default_wm_dict), open(savename,'w'))
+    return output, default_wm_dict
 
 
 def main(filename=datapath+'atlas_0p05_to_1p0.csv', 
-         doPlot=False, n_estimators=30, n_jobs=1):
+         doPlot=False, n_estimators=30, n_jobs=1, 
+         surveys=['sdss','wise','2mass']):
 
     from sklearn.ensemble import ExtraTreesRegressor as rfRegressor
     from sklearn.cross_validation import train_test_split
 
     # get data
     d = read_sdss(filename)
-    ipdb.set_trace()
 
+    # get wise and 2mass data
+    wm, default_wm_dict = read_wise_and_2mass(datapath+'wise_2mass_100000gals_0p05_to_1p0.txt',quick=True)
 
-    # get wise data
-    wise=read_wise(datapath+'wise_100000gals_0p05_to_1p0.txt',quick=True)
-    dd={}
-    for k in d:
-        dd[k] = d[k][wise.keys()]
-    for k in wise.values()[0]:
-        dd[k] = np.array([thing[k] for thing in wise.values()])
-    d=dd
-
-
-    # get 2mass data
-    #mass=read_2mass(datapath+'2mass_100000gals_0p05_to_1p0.txt',quick=True)
-    #keys2use = ['j','h','k']
-    #defaults = {'j':20., 'h':20., 'k':20.}
-    #for key in keys2use: d[key]=np.zeros(len(d['redshift']))+defaults[key]
-    #for key in keys2use:
-    #    for id,v in mass.iteritems(): d[key][id] = v[key]
-    #ipdb.set_trace()
+    # fold one dataset into another.  NB: need to be careful here, as
+    # currently i'm effectively requiring a WISE match.
+    d = fold_sdss_into_wm(d, wm)
 
     # create feature vector and labels.
-    X = np.vstack((
-            d['u'],
-            d['g'],
-            d['r'],
-            d['i'],
-            d['z'],
-            d['u']-d['g'], 
-            d['g']-d['r'], 
-            d['r']-d['i'], 
-            d['i']-d['z'], 
-            d['g']-d['i'], 
-            d['g']-d['z'], 
-            d['expAB_u'], 
-            d['expAB_g'], 
-            d['expAB_r'], 
-            d['expAB_i'], 
-            d['expAB_z'], 
-            d['petroR50_u'], 
-            d['petroR90_u'], 
-            d['petroR50_g'], 
-            d['petroR90_g'], 
-            d['petroR50_r'], 
-            d['petroR90_r'], 
-            d['petroR50_i'], 
-            d['petroR90_i'], 
-            d['petroR50_z'], 
-            d['petroR90_z'], 
-            d['petroR50_u']/d['petroR90_u'],
-            d['petroR50_g']/d['petroR90_g'],
-            d['petroR50_r']/d['petroR90_r'],
-            d['petroR50_i']/d['petroR90_i'],
-            d['petroR50_z']/d['petroR90_z'],
-            d['w1']-d['u'],
-            d['w1']-d['g'],
-            d['w1']-d['r'],
-            d['w1']-d['i'],
-            d['w1']-d['z'],
-            d['w1']-d['w2'],
-            d['w1']-d['w3'],
-            d['w1']-d['w4'],
-            d['w2']-d['u'],
-            d['w2']-d['g'],
-            d['w2']-d['r'],
-            d['w2']-d['i'],
-            d['w2']-d['z'],
-            d['w2']-d['w1'],
-            d['w2']-d['w3'],
-            d['w2']-d['w4'],
-            d['w3']-d['u'],
-            d['w3']-d['g'],
-            d['w3']-d['r'],
-            d['w3']-d['i'],
-            d['w3']-d['z'],
-            d['w3']-d['w2'],
-            d['w3']-d['w1'],
-            d['w3']-d['w4'],
-            d['w4']-d['u'],
-            d['w4']-d['g'],
-            d['w4']-d['r'],
-            d['w4']-d['i'],
-            d['w4']-d['z'],
-            d['w4']-d['w2'],
-            d['w4']-d['w3'],
-            d['w4']-d['w1'],
-            d['w2'],
-            d['w1'],
-            )).T
-    y = d['redshift']
+    X = get_feautres(d, surveys=surveys)
+    y = np.array([v['redshift'] for v in d.values()])
 
-    pickle.dump((X,y),open(datapath+'Xy.pkl','w'))
+    #pickle.dump((X,y),open(datapath+'Xy.pkl','w'))
 
     # split data into train and test.
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
@@ -424,3 +320,67 @@ def plot_summary(y_test, predict_test, y_train, diff,
     pl.xlabel('r')
     pl.ylabel('sigma')
 
+
+
+
+def get_feautres(d, surveys=['sdss','wise','2mass']):
+    ngals = len(d)
+    X = None
+
+    if 'sdss' in surveys:
+        u = np.array([v['u'] for v in d.values()])
+        g = np.array([v['g'] for v in d.values()])
+        r = np.array([v['r'] for v in d.values()])
+        i = np.array([v['i'] for v in d.values()])
+        z = np.array([v['z'] for v in d.values()])
+        petroR50_r = np.array([v['petroR50_r'] for v in d.values()])
+        petroR90_r = np.array([v['petroR90_r'] for v in d.values()])
+        expAB_r = np.array([v['expAB_r'] for v in d.values()])
+        # EDIT FEATURES HERE
+        tmp = np.vstack((r, u-g, g-r, r-i, i-z, petroR50_r, petroR90_r, expAB_r))
+        if X==None: X=tmp
+        else: X=np.vstack((X,tmp))
+
+    if 'wise' in surveys:
+        w1 = np.array([v['w1'] for v in d.values()])
+        w2 = np.array([v['w2'] for v in d.values()])
+        w3 = np.array([v['w3'] for v in d.values()])
+        w4 = np.array([v['w4'] for v in d.values()])
+        # EDIT FEATURES HERE
+        tmp = np.vstack((w2, w1-w2, w2-w3, w3-w4))
+        if X==None: X=tmp
+        else: X=np.vstack((X,tmp))
+
+    if '2mass' in surveys:
+        j = np.array([v['j'] for v in d.values()])
+        h = np.array([v['h'] for v in d.values()])
+        k = np.array([v['k'] for v in d.values()])
+        # EDIT FEATURES HERE
+        tmp = np.vstack((j, j-h, h-k))
+        if X==None: X=tmp
+        else: X=np.vstack((X,tmp))
+
+    if ('sdss' in surveys) & ('wise' in surveys):
+        X=np.vstack((X, i-w2))
+
+    if ('sdss' in surveys) & ('2mass' in surveys):
+        X=np.vstack((X, i-j))
+
+    if ('wise' in surveys) & ('2mass' in surveys):
+        X=np.vstack((X, j-w2))
+
+    return X.T
+
+def fold_wm_into_sdss(d, wm, default_wm_dict):
+    for k in d.keys():
+        if k in wm: 
+            d[k] = dict(d[k].items()+wm[k].items())
+        else:
+            d[k] = dict(d[k].items()+default_wm_dict.items())
+    return d
+
+
+def fold_sdss_into_wm(d, wm):
+    for k in wm.keys(): wm[k] = dict(d[k].items()+wm[k].items())
+    return wm
+    
