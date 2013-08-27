@@ -1,3 +1,5 @@
+http://www.sdss3.org/dr9/tutorials/lss_galaxy.php
+
 - how much better is it trained with full 1M samples?
 - try NN
 
