@@ -186,17 +186,21 @@ def get_wise_part(part=44):
     return np.load(open(savename,'r'))
 
 
-def boil_down_wise(filename=wise_datapath+'wise-allsky-cat-part44', savepath=wise_datapath):
+def boil_down_wise(filename=wise_datapath+'wise-allsky-cat-part44', 
+                   savepath=wise_datapath, npersub=100000):
     savename = savepath+filename.split('/')[-1]
     f=open(filename)
     default_mag = 30.
     w_ind = wise_cat_ind()
     np_ind = np_array_ind()
     nsave = len(np_array_ind())
-    count = -1
+    count = 0
+    subcount = 0
+    subname = 0
     X = []
     for line in f:
         count+=1
+        subcount+=1
         if (count % 100000)==0: print count
         tmp = line.split('|')
         thisX = np.zeros(nsave)
@@ -206,7 +210,12 @@ def boil_down_wise(filename=wise_datapath+'wise-allsky-cat-part44', savepath=wis
             else: valtmp=float(valtmp)
             thisX[np_ind[k]]=valtmp
         X.append(thisX)        
-    np.save(savename, np.vstack(X))
+        if (subcount>=npersub):
+            subcount=0
+            np.save(savename+'_%i'%subname, np.vstack(X))            
+            subname += 1
+            X=[]
+    np.save(savename+'_%i'%subname, np.vstack(X))            
 
 
 def wise_cat_ind():
