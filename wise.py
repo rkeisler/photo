@@ -4,8 +4,7 @@ pl.ion()
 import pdb
 import pickle
 
-wise_datapath='/data/rkeisler/wise/'
-
+wise_datapath='/home/rkeisler/wise/'
 
 def colmag_wise_boss(frac=0.0065):
     # frac=0.0065 corresponds to 2.0 square degrees.
@@ -24,9 +23,15 @@ def colcol_subset_boss(frac=0.0065, sample='cmass', nofirst=False, sym1='b.', sy
     nshow2 = int(frac*len(wh_boss))
     if not(nofirst): colmag_plot(w1,w2,w3,w4,nshow=nshow1,symbol=sym1)
     colmag_plot(w1[wh_boss],w2[wh_boss],w3[wh_boss],w4[wh_boss],nshow=nshow2, symbol=sym2, noclf=True)
-    #from matplotlib.pyplot import tight_layout
-    #tight_layout()
-    #pl.legend(['WISE','BOSS ('+sample.upper()+')'])
+
+    # explore this color cut
+    cA = w1
+    cB = w2-w4-w1
+    wh_cut = np.where((cA>=14.8) & (cA<=16.0) & (cB>=-10.0) & (cB<=-8.8))[0]
+    wh_lots = np.where((cA>=14.8) & (cA<=16.0) & (cB>=-10.0) & (cB<=-8.8) & (label==0))[0]
+    wh_few = np.where((cA>=14.8) & (cA<=16.0) & (cB>=-10.0) & (cB<=-8.8) & (label==1))[0]
+    print 1.*len(wh_lots)/len(wh_few),len(wh_cut)
+
 
 
 def colcol_subset(nshow=10000):
@@ -49,7 +54,8 @@ def colmag_plot(w1_,w2_,w3_,w4_,nshow=10000,symbol='b.',noclf=False):
     w4 = w4_[ind]
     d1 = {'color':w1, 'name':'w1', 'range':[8,20]}    
     d12 = {'color':w1-w2, 'name':'w1-w2', 'range':[-2,3]}
-    d23 = {'color':w2-w4, 'name':'w2-w4', 'range':[-2,10]}
+    d23 = {'color':w2-w4-w1, 'name':'w2-w4-w1', 'range':[-14,-6]}
+#    d23 = {'color':w2-w4, 'name':'w2-w4', 'range':[-2,10]}    
     d34 = {'color':w3-w4, 'name':'w3-w4', 'range':[-1,5]}
     d14 = {'color':w1-w3, 'name':'w1-w3', 'range':[-1,11]}
     d = [d1, d12, d23, d34, d14]
@@ -242,7 +248,7 @@ def process_wise_dec_strip(part):
     timeo = time()
 
     savename_prefix = 'wise-allsky-cat-part%02d'%part
-    savepath = '/mnt/'
+    savepath = '/home/rkeisler/wise/tmp/'
     bz_name = savepath+savename_prefix+'.bz2'
     unzip_name = savepath+savename_prefix
 
@@ -264,10 +270,10 @@ def process_wise_dec_strip(part):
     print 'that took ',timeb-timea
 
     print '...reducing...'
-    print "boil_down_wise(filename=unzip_name, savepath='/data/wise/allsky/')"
+    print "boil_down_wise(filename=unzip_name, savepath='/home/rkeisler/wise/allsky/')"
     print unzip_name
     timea = time()
-    boil_down_wise(filename=unzip_name, savepath='/data/wise/allsky/')
+    boil_down_wise(filename=unzip_name, savepath='/home/rkeisler/wise/allsky/')
     timeb = time()
     print 'that took ',timeb-timea
 
@@ -278,6 +284,7 @@ def process_wise_dec_strip(part):
     print '************************************************'
     print 'one part, EVERYTHING took ',time()-timeo
     print '************************************************'
+
 
 def process_many(imin_incl=1, imax_incl=50):
     for i in range(imin_incl, imax_incl+1): process_wise_dec_strip(i)
