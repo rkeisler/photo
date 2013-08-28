@@ -229,19 +229,50 @@ def np_array_ind():
 
 def process_wise_dec_strip(part):
     from os import system
-    print '...downloading...'
-    this_address = 'http://irsadist.ipac.caltech.edu/wise-allsky/wise-allsky-cat-part%02d.bz2'%part
-    print this_address
-    system('curl -O '+this_address)
-    print '...unzipping...'
-    system('bunzip2 '+savename)
-    print '...reducing...'
-    boil_down_wise(filename=savename, savepath='/data/wise/allsky/')
-    print '...removing raw data...'
-    system('rm '+savename)
+    from time import time
+    timeo = time()
 
-def process_many(imin_incl=1, imax_excl=51):
-    for i in range(imin(incl, imax_excl): process_wise_dec_strip(i)
+    savename_prefix = 'wise-allsky-cat-part%02d'%part
+    savepath = '/mnt/'
+    bz_name = savepath+savename_prefix+'.bz2'
+    unzip_name = savepath+savename_prefix
+
+    print '...downloading...'
+    this_address = 'http://irsadist.ipac.caltech.edu/wise-allsky/'+savename_prefix+'.bz2'
+    cmd = 'curl -o '+bz_name+' '+this_address
+    print cmd
+    timea = time()
+    system(cmd)
+    timeb = time()
+    print 'that took ',timeb-timea
+
+    print '...unzipping...'
+    cmd = 'bunzip2 '+bz_name
+    print cmd
+    timea = time()
+    system(cmd)
+    timeb = time()
+    print 'that took ',timeb-timea
+
+    print '...reducing...'
+    print "boil_down_wise(filename=unzip_name, savepath='/data/wise/allsky/')"
+    print unzip_name
+    timea = time()
+    boil_down_wise(filename=unzip_name, savepath='/data/wise/allsky/')
+    timeb = time()
+    print 'that took ',timeb-timea
+
+    print '...removing raw data...'
+    cmd = 'rm '+unzip_name
+    print cmd
+    system(cmd)
+    print '************************************************'
+    print 'one part, EVERYTHING took ',time()-timeo
+    print '************************************************'
+
+def process_many(imin_incl=1, imax_incl=50):
+    for i in range(imin_incl, imax_incl+1): process_wise_dec_strip(i)
+
 
 
     
