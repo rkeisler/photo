@@ -1,4 +1,54 @@
+COSMOS field:
+RA (J2000) = 10:00:28.6 
+DEC (J2000) = +02:12:21.0
+10h00m28.6s +02d12m21.0s
+
+
+CMASS-like selection:
+cA = w1
+cB = w2-w4-w1
+
+14.8 <= cA <= 16.0
+-10.0 <= cB <= -8.8
+
+
+The 2MASS detections fall apart at w1>~15.5.  They go to 70% at w1=15 and 20% at 16.  This means they're dropping out at z~0.4.
+
+http://irsadist.ipac.caltech.edu/wise-allsky/wise-allsky-cat-part44.gz
+http://wise2.ipac.caltech.edu/docs/release/allsky/expsup/sec2_2a.html
 http://www.sdss3.org/dr9/tutorials/lss_galaxy.php
+http://wise2.ipac.caltech.edu/docs/release/allsky/expsup/index.html
+---------------------------------------------------------
+The end goal is to say, for each object in the WISE catalog:
+
+- given the 4-band WISE photometry for this object
+- and given the 3-band 2MASS photometry (or lack thereof) for this object
+
+is it a CMASS-like objet?  I.e. would it have appeared in the SDSS CMASS (z~0.5 LRG) catalog if it had been in the SDSS imaging footprint?
+
+To answer this, we'll train a classifier as follows.
+
+- Find all WISE objects that are located in the SDSS footprint.  For the ~15k deg2 SDSS footprint, this will be about 10k*15k=150M WISE objects!  Ultimately we'll use official mask, http://www.sdss3.org/dr9/tutorials/lss_galaxy.php#files.  We'll need some method of determining whether a source is in this mask, perhaps using mangle to convert to healpix, as done at http://space.mit.edu/~molly/mangle/download/data.html.  In the short term, we can use a 3% subset over this RA/DEC range: 113.55470 <= RA <= 256.07737, 47.385300 < DEC <= 50.678000, over which there are ~67k CMASS objects and ~3.3M WISE objects.  Area of that range is about (256.07737-113.55470)*(50.678000-47.385300)*cos(49.*np.pi/180.)=307.9 sq deg.
+
+- For each object, there are (at least) 7 features: 4-band WISE photometry and 3-band 2MASS photometry.
+
+- For each object, the label is 1 if this object has a position match with a CMASS object, and 0 otherwise (which could mean either that there's no SDSS object there, or that there is one, but it didn't pass the CMASS cut).
+
+
+One real problem is that the WISE catalog is huge, like 800G uncompressed.  But what if I want to keep only 9 numbers per object and store them as npy?  Ah, then it's only 70MB per 1e6 objects, or ~10G for the whole WISE catalog.  That I can do, either on my laptop or on ec2.  Probably should do it on ec2, since the fitting will likely be memory intensive.
+
+But first: try it on this 3% subset of data.
+
+
+-------------------------------
+Densities:
+SDSS density = ~64k/deg2 [930M objects total over 14.5k deg2]
+CMASS density = ~100/deg2
+WISE density = ~10k/deg2 [560M objects total over ~45k deg2]
+WISE density is ~100X higher than CMASS density, so it seems quite unlikely that there will be a CMASS object that doesn't even show up in the WISE catalog, but we'll have to check.
+-------------------------------
+
+---------------------------------------------------------
 
 - how much better is it trained with full 1M samples?
 - try NN
