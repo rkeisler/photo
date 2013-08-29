@@ -290,5 +290,135 @@ def process_many(imin_incl=1, imax_incl=50):
     for i in range(imin_incl, imax_incl+1): process_wise_dec_strip(i)
 
 
+def read_cosmos(cosmosname='/Users/rkeisler/cosmos_zphot_mag25.tbl.tbl'):
+    f=open(cosmosname,'r')
+    ra = []
+    dec = []
+    z = []
+    type = []
+    for line in f:
+        if '|' in line: continue
+        if '\\' in line: continue
+        tmp=line.split()
+        if tmp[2]=='null': continue
+        if tmp[4]=='null':
+            # these are in masked areas (bright stars, etc.).
+            tmp[4]=0.
+            tmp[5]=-99
+        ra.append(float(tmp[2]))
+        dec.append(float(tmp[3]))
+        z.append(float(tmp[4]))
+        type.append(int(tmp[5]))
+    f.close()
+    ra = np.array(ra)
+    dec = np.array(dec)
+    z = np.array(z)
+    type = np.array(type, dtype=int)
+    return ra, dec, z, type
+
+
+def read_wise_cat_cosmos(filename='/Users/rkeisler/wise_cat_COSMOS.txt'):
+    f=open(filename,'r')
+    ra=[]
+    dec=[]
+    w1=[]
+    w2=[]
+    w3=[]
+    w4=[]
+    w1sn=[]
+    w1cov=[]
+    j=[]
+    h=[]
+    k=[]
+    arrived_labels=False
+    default_mag=30.
+    for line in f:
+        if ('|' in line):
+            arrived_labels=True
+            continue
+        else:
+            if not(arrived_labels): continue
+        tmp=line.split()
+        ra.append(float(tmp[1]))
+        dec.append(float(tmp[2]))
+        w1.append(float(tmp[5]))
+        w1sn.append(float(tmp[6]))
+        w2.append(float(tmp[7]))
+        w3.append(float(tmp[8]))
+        w4.append(float(tmp[9]))
+        w1cov.append(float(tmp[10]))
+        if tmp[11]=='null': j.append(default_mag)
+        else: j.append(float(tmp[11]))
+        if tmp[12]=='null': h.append(default_mag)
+        else: h.append(float(tmp[12]))
+        if tmp[13]=='null': k.append(default_mag)
+        else: k.append(float(tmp[13]))
+    ra=np.array(ra)
+    dec=np.array(dec)
+    wh_cosmos=np.where((ra>=149.41143) & (ra<=150.82684) & (dec>=1.498815) & (dec<=2.91273))[0]
+    ra = ra[wh_cosmos]
+    dec = dec[wh_cosmos]
+    w1=np.array(w1)[wh_cosmos]
+    w2=np.array(w2)[wh_cosmos]
+    w3=np.array(w3)[wh_cosmos]
+    w4=np.array(w4)[wh_cosmos]
+    w1sn=np.array(w1sn)[wh_cosmos]
+    w1cov=np.array(w1cov)[wh_cosmos]
+    j=np.array(j)[wh_cosmos]
+    h=np.array(h)[wh_cosmos]
+    k=np.array(k)[wh_cosmos]
+    return ra,dec,w1,w2,w3,w4,j,h,k
+
+
+def study_match_rad():
+    ra_c, dec_c, z_c, type_c = read_cosmos()
+    ra,dec,w1,w2,w3,w4,j,h,k = read_wise_cat_cosmos()
+    count=0
+    n_wise = len(ra)
+    min_dist=[]
+    for this_ra, this_dec in zip(ra,dec):
+        count+=1
+        if (count % 1000)==0: print count,n_wise
+        this_dist = np.sqrt((this_dec-dec_c)**2. + ((this_ra-ra_c)*np.cos(this_dec*np.pi/180.))**2.)*3600.
+        this_min_dist = np.min(this_dist)
+        this_cosmos_ind = np.argmin(this_dist)
+        if (type_c[this_cosmos_ind]!=0): continue
+        min_dist.append(this_min_dist)
+    min_dist = np.array(min_dist)
+    rad=np.linspace(0.2,5.0,49)
+    frac=np.zeros_like(rad)
+    for i,this_rad in enumerate(rad):
+        frac[i] = 1.*len(np.where(min_dist<=this_rad)[0])/len(min_dist)
+    pl.plot(rad,frac)
+    pl.plot(rad,frac,'bo')
+    pl.xlabel('Match Radius (arcsec)',fontsize=14)
+    pl.ylabel('Fraction Matched',fontsize=14)
+    pl.title('WISE and COSMOS matching',fontsize=16)
+    pdb.set_trace()
+
+
+def match_wise_cosmos():
+    ra_c, dec_c, z_c, type_c = read_cosmos()
+    ra,dec,w1,w2,w3,w4,j,h,k = read_wise_cat_cosmos()
+    count=0
+    n_wise = len(ra)
+    z = np.zeros(n_wise)
+    type = np.zeros(n_wise)
+    for i in range(n_wise):
+        count+=1
+        if (count % 1000)==0: print count,n_wise
+        this_ra = ra[i]
+        this_dec = dec[i]
+        this_dist = np.sqrt((this_dec-dec_c)**2. + ((this_ra-ra_c)*np.cos(this_dec*np.pi/180.))**2.)*3600.
+        this_cosmos_ind = np.argmin(this_dist)
+        z[i] = z_c[this_cosmos_ind]
+        type[i] = type_c[this_cosmos_ind]
+
+    X = np.vstack((w1,w2,w3,w4,j,h,k)).T
+    whuse = np.where(type!=-99)[0]
+    X = X[whuse,:]
+    z = z[whuse]
+    type = type[whuse]
 
     
+        

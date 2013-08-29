@@ -1,3 +1,18 @@
+- actually try to train a WISE photo-z using COSMOS photo-z.  how bad?
+- more likely: define some bins in WISE col-mag space, and look at dN/dz of each using COSMOS.  look at BAO and CMB lensing of each.
+
+use other WISE info, like flux within different radii?
+
+~25% of WISE sources are z<0.1
+~50% of WISE sources are z<0.66
+~75% of WISE sources are z<0.88
+~90% of WISE sources are z<1.10
+~95% of WISE sources are z<1.25
+~99% of WISE sources are z<1.6
+
+source density of 0.6<z<1.0 sources: 2150/deg2
+source density of 1.0<z<3.0 sources: 850/deg2
+
 COSMOS field:
 RA (J2000) = 10:00:28.6 
 DEC (J2000) = +02:12:21.0
