@@ -397,7 +397,11 @@ def study_match_rad():
     pdb.set_trace()
 
 
-def match_wise_cosmos():
+def match_wise_cosmos(quick=False):
+    savename='match_wise_cosmos.pkl'
+    if quick: 
+        X,z,type=pickle.load(open(savename,'r'))
+        return X,z,type
     ra_c, dec_c, z_c, type_c = read_cosmos()
     ra,dec,w1,w2,w3,w4,j,h,k = read_wise_cat_cosmos()
     count=0
@@ -413,12 +417,120 @@ def match_wise_cosmos():
         this_cosmos_ind = np.argmin(this_dist)
         z[i] = z_c[this_cosmos_ind]
         type[i] = type_c[this_cosmos_ind]
-
     X = np.vstack((w1,w2,w3,w4,j,h,k)).T
     whuse = np.where(type!=-99)[0]
     X = X[whuse,:]
     z = z[whuse]
     type = type[whuse]
-
+    pickle.dump((X,z,type), open(savename,'w'))
+    return X,z,type
     
         
+def study_dndz(cA_cen=15.4, cA_width=1.2,
+               cB_cen=-9.0, cB_width=1.2):
+    x, z, type = match_wise_cosmos(quick=True)
+    w1=x[:,0]
+    w2=x[:,1]
+    w3=x[:,2]
+    w4=x[:,3]
+    j=x[:,4]
+    h=x[:,5]
+    k=x[:,6]
+
+    cA = w1
+    cB = w2-w4-w1
+
+    #cA_cen = 15.4
+    #cA_width = 1.2
+    #cB_cen = -9.4
+    #cB_width = 1.2
+
+    cA_min = cA_cen-cA_width/2.
+    cA_max = cA_cen+cA_width/2.
+    cB_min = cB_cen-cB_width/2.
+    cB_max = cB_cen+cB_width/2.
+    wh_cut = np.where((cA>=cA_min) & (cA<=cA_max) & (cB>=cB_min) & (cB<=cB_max) & (type==0))[0]
+    n_cut = len(wh_cut)
+    fcolor='green'
+
+    pl.figure(1)
+    pl.clf()
+    pl.subplot(2,1,1)
+    pl.plot(cA,cB,'k.')
+    pl.plot(cA[wh_cut], cB[wh_cut],'r.')
+    meanz = np.mean(z[wh_cut])
+    medz = np.median(z[wh_cut])
+    pl.title('%i gals, <z>=%0.2f, |z|=%0.2f'%(n_cut, meanz, medz))
+
+    pl.subplot(2,1,2)
+    zbins = np.linspace(0.1,2.0,15)
+    n, bins, patches = pl.hist(z[wh_cut], zbins, normed=0, facecolor=fcolor, alpha=0.5)
+    zcen = 0.5*(zbins[0:-1]+zbins[1:])
+
+
+
+def study_dndz_interactive():
+    x, z, type = match_wise_cosmos(quick=True)
+    w1=x[:,0]
+    w2=x[:,1]
+    w3=x[:,2]
+    w4=x[:,3]
+    j=x[:,4]
+    h=x[:,5]
+    k=x[:,6]
+
+    cA = w1
+    cB = w2-w4-0.7*w1
+    xlab = 'W1'
+    ylab = 'W2-W4-0.7W1'
+    fs = 16
+
+    fcolor='green'
+    pl.figure(1, figsize=(12,8))
+    pl.clf()
+    pl.subplot(2,1,1)
+    pl.plot(cA,cB,'k.')
+    pl.xlabel(xlab,fontsize=fs);pl.ylabel(ylab,fontsize=fs)
+
+    keep_going=True
+    from matplotlib.pylab import ginput
+    import cosmolopy as cp
+    while keep_going:
+        pt = ginput(2,timeout=100000)
+        pl.clf()
+        pl.subplot(2,1,1)
+        pl.plot(cA,cB,'k.')
+        pl.xlabel(xlab,fontsize=fs);pl.ylabel(ylab,fontsize=fs)
+        if pt[0]==pt[1]:
+            keep_going=False
+        else:
+            x0 = pt[0][0]
+            y0 = pt[0][1]
+            x1 = pt[1][0]
+            y1 = pt[1][1]
+            cA_min = np.min([x0,x1])
+            cA_max = np.max([x0,x1])
+            cB_min = np.min([y0,y1])
+            cB_max = np.max([y0,y1])
+            wh_cut = np.where((cA>=cA_min) & (cA<=cA_max) & (cB>=cB_min) & (cB<=cB_max) & (type==0))[0]
+            n_cut = len(wh_cut)
+
+            pl.subplot(2,1,1)
+            pl.plot(cA[wh_cut], cB[wh_cut],'r.')
+            pl.xlabel(xlab,fontsize=fs);pl.ylabel(ylab,fontsize=fs)
+            meanz = np.mean(z[wh_cut])
+            medz = np.median(z[wh_cut])
+            pl.title('[%0.2f, %0.2f], [%0.2f, %0.2f], %i gals, <z>=%0.2f, |z|=%0.2f, sig=%0.2f'%(cA_min, cA_max, cB_min, cB_max, n_cut, meanz, medz,np.std(z[wh_cut])), fontsize=16)
+#            pl.legend(['%0.2f, %0.2f'%(cA_min, cA_max), '%0.2f, %0.2f'%(cB_min, cB_max)], 'upper left')
+
+            pl.subplot(2,1,2)
+            zbins = np.linspace(0.1,2.0,15)
+            n, bins, patches = pl.hist(z[wh_cut], zbins, normed=0, facecolor=fcolor, alpha=0.5)
+            zcen = 0.5*(zbins[0:-1]+zbins[1:])
+            rsound_com = 153.
+            rsound_phs = rsound_com/(1.+zcen)
+            dang = cp.distance.angular_diameter_distance(zcen,**cp.fidcosmo)
+            ang_sound = rsound_phs/dang
+            ang_sound /= np.median(ang_sound)
+            pl.plot(zcen, ang_sound*np.max(n)/4.5, 'b', linewidth=2)
+            #print 30./1e3/dang*180./np.pi*3600. # galaxy size
