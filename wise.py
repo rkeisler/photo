@@ -534,3 +534,60 @@ def study_dndz_interactive():
             ang_sound /= np.median(ang_sound)
             pl.plot(zcen, ang_sound*np.max(n)/4.5, 'b', linewidth=2)
             #print 30./1e3/dang*180./np.pi*3600. # galaxy size
+
+def get_hpix(nside=2**8, cA_min = 17.20, cA_max = 17.48,
+              cB_min = -5.20, cB_max = -3.99, name='h', 
+             quick=False):
+    savename = '/home/rkeisler/wise/hpix_nside%i_'%nside+name+'.pkl'
+    if quick: return pickle.load(open(savename,'r'))
+
+    import healpy as hp
+    from glob import glob
+    files = glob('/home/rkeisler/wise/allsky/*npy')
+    npix = hp.nside2npix(nside)
+    nmap = np.zeros(npix)
+    count=0
+    nfiles = len(files)
+    for file in files:
+        count+=1
+        print count,nfiles
+        x = np.load(file)
+        ra=x[:,0]
+        dec=x[:,1]
+        w1=x[:,2]
+        w2=x[:,3]
+        w3=x[:,4]
+        w4=x[:,5]
+        cA = w1
+        cB = w2-w4-0.7*w1    
+        wh_cut = np.where((cA>=cA_min) & (cA<=cA_max) & (cB>=cB_min) & (cB<=cB_max))[0]
+        phi_cut = ra[wh_cut]*np.pi/180.
+        th_cut = np.pi/2.-dec[wh_cut]*np.pi/180. 
+        ind = hp.ang2pix(nside, th_cut, phi_cut)
+        for thing in ind: nmap[thing]+=1
+    pickle.dump(nmap, open(savename,'w'))
+    return nmap
+
+def chunk_dict():
+    dd={'a':{'ca_min':14.04, 'ca_max':14.71, 'cb_min':-4.94, 'cb_max':-4.15},
+        'b':{'ca_min':14.69, 'ca_max':15.15, 'cb_min':-4.92, 'cb_max':-4.25},
+        'c':{'ca_min':15.17, 'ca_max':15.58, 'cb_min':-5.00, 'cb_max':-4.09},
+        'd':{'ca_min':15.58, 'ca_max':15.91, 'cb_min':-4.94, 'cb_max':-3.76},
+        'e':{'ca_min':15.92, 'ca_max':16.34, 'cb_min':-4.94, 'cb_max':-3.58},
+        'f':{'ca_min':16.37, 'ca_max':16.85, 'cb_min':-5.15, 'cb_max':-3.47},
+        'g':{'ca_min':16.85, 'ca_max':17.25, 'cb_min':-5.23, 'cb_max':-3.68},
+        'h':{'ca_min':17.20, 'ca_max':17.48, 'cb_min':-5.20, 'cb_max':-3.99}}
+    return dd
+
+
+def make_many_hpix(nside=2**8):
+    chunkdic = chunk_dict()
+    keys = ['f','g','h']
+    for k in keys:
+#    for k,v in chunkdic.iteritems():
+        v = chunkdic[k]
+        this_map=get_hpix(nside=nside, 
+                          cA_min=v['ca_min'], cA_max=v['ca_max'],
+                          cB_min=v['cb_min'], cB_max=v['cb_max'], 
+                          name=k, quick=False)
+
