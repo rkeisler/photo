@@ -1,5 +1,9 @@
+- slice of LRGs from sloan X Planck CMB lensing
+- BAO in WISE quasars (Geach)
 - actually try to train a WISE photo-z using COSMOS photo-z.  how bad?
-- more likely: define some bins in WISE col-mag space, and look at dN/dz of each using COSMOS.  look at BAO and CMB lensing of each.
+- BAO in Planck CIB?
+
+
 
 use other WISE info, like flux within different radii?
 
