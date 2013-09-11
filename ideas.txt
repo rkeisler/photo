@@ -1,6 +1,9 @@
-- slice of LRGs from sloan X Planck CMB lensing
-- BAO in WISE quasars (Geach)
-- actually try to train a WISE photo-z using COSMOS photo-z.  how bad?
+- actually try to train a WISE photo-z using COSMOS photo-z.  shape information from WISE.
+
+- how robust are WISExWISE results?  higher flux cut?  as a function of masking?  cross-correlate with CMB lensing.  model with parameterized bias(z)?
+
+- slice of spec-z LRGs from sloan X Planck CMB lensing.  you could, in principle, see the BAO feature, and it seems like it would be immune to some systematics present in LRGxLRG.
+
 - BAO in Planck CIB?
 
 
