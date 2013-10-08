@@ -1,3 +1,5 @@
+- you might use "CAMB sources", which, given some dn/dz or n(z), provides auto-spectra (g-g) and cross-spectrum with CMB lensing (g-phi).
+
 - actually try to train a WISE photo-z using COSMOS photo-z.  shape information from WISE.
 
 - how robust are WISExWISE results?  higher flux cut?  as a function of masking?  cross-correlate with CMB lensing.  model with parameterized bias(z)?
