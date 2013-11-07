@@ -485,7 +485,11 @@ def study_dndz_interactive():
     ylab = 'W2-W4-0.7W1'
     fs = 16
 
+    from matplotlib import rc
+    rc('xtick', labelsize=17) 
+    rc('ytick', labelsize=17) 
     fcolor='green'
+    fcolor='blue'
     pl.figure(1, figsize=(12,8))
     pl.clf()
     pl.subplot(2,1,1)
@@ -532,7 +536,9 @@ def study_dndz_interactive():
             dang = cp.distance.angular_diameter_distance(zcen,**cp.fidcosmo)
             ang_sound = rsound_phs/dang
             ang_sound /= np.median(ang_sound)
-            pl.plot(zcen, ang_sound*np.max(n)/4.5, 'b', linewidth=2)
+            pl.xlabel('Redshift (z)',fontsize=20)
+            pl.ylabel('N',fontsize=20)
+            #pl.plot(zcen, ang_sound*np.max(n)/4.5, 'b', linewidth=2)
             #print 30./1e3/dang*180./np.pi*3600. # galaxy size
 
 def get_hpix(nside=2**8, cA_min = 17.20, cA_max = 17.48,
