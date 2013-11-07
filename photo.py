@@ -7,6 +7,27 @@ from os.path import exists
 datapath = '/data/photo_data/'    
 
 
+def get_ra_dec_z(filename=datapath+'atlas_0p05_to_1p0.csv', ngals=None, shuffle=True):
+    # get SDSS data
+    d = read_sdss(filename,keys2grab=['ra','dec','z'])
+    id = d.keys()
+    if shuffle:
+        np.random.seed(3)
+        np.random.shuffle(id)        
+    ngals_total = len(id)
+    if ngals==None: ngals=ngals_total
+    tmp = filename.split('.')[0]
+    tmp = tmp.split('_')
+    zrange = tmp[-3]+'_to_'+tmp[-1]
+    savename = datapath + 'irsa_table_'+zrange+'_%igals.txt'%ngals
+    fileout = open(savename,'w')
+    fileout.write('|cntr    |ra        |dec            |\n')
+    for j in range(ngals):
+        this_d = d[id[j]]
+        fileout.write(' %7i   %9.5f  %9.5f\n'%(id[j], this_d['ra'], this_d['dec']))
+    fileout.close()
+
+
 def make_irsa_table(filename=datapath+'atlas_0p05_to_1p0.csv', ngals=None, shuffle=True):
     # get SDSS data
     d = read_sdss(filename,keys2grab=['ra','dec'])
