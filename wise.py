@@ -597,3 +597,84 @@ def make_many_hpix(nside=2**8):
                           cB_min=v['cb_min'], cB_max=v['cb_max'], 
                           name=k, quick=False)
 
+def mask_from_map(nmap, fwhm_deg=7.0, final_fwhm_deg=7.0, 
+                  thresh=1.4, lat_gal_cut=20., ecl_pole_rad=15.):
+
+    import healpy as hp
+    mask = np.ones_like(nmap)
+
+    # mask out low galactic latitudes
+    npix = len(nmap)
+    nside = hp.npix2nside(npix)
+    ipix = np.arange(npix)
+    theta_c, phi_c = hp.pix2ang(nside, ipix, nest=False)
+    r = hp.Rotator(coord=['C','G'])  # transforms celestial to galactic
+    theta_gal, phi_gal = r(theta_c, phi_c)
+    lat_gal_deg = (np.pi/2.-theta_gal)*180./np.pi
+    wh_gal = np.where(np.abs(lat_gal_deg)<lat_gal_cut)[0]
+    mask[wh_gal]=0.
+              
+    # mask out the ecliptic poles
+    r = hp.Rotator(coord=['C','E'])  # transforms celestial to galactic
+    theta_ecl, phi_ecl = r(theta_c, phi_c)
+    lat_ecl_deg = (np.pi/2.-theta_ecl)*180./np.pi
+    wh_ecl_pole = np.where(np.abs(np.abs(lat_ecl_deg)-90.)<ecl_pole_rad)[0]
+    mask[wh_ecl_pole]=0.
+
+    # mask out Magellanic clouds.
+    # tmpp
+
+    # mask according to <nmap>, which is a proxy for coverage.
+    sm = hp.smoothing(nmap*mask, fwhm=fwhm_deg*np.pi/180.)
+    wh=np.where((sm<(thresh*np.median(sm))))[0]
+    mask[wh]=0.
+
+    # apply a  final smoothing
+    mask = hp.smoothing(mask, fwhm=final_fwhm_deg*np.pi/180.)
+
+    if False:
+        hp.mollview(mask*nmap)
+        pdb.set_trace()
+    return mask
+
+
+def many_spectra():
+    import healpy as hp
+    chunks = ['f','g','h']
+    thresh = {'f':1.0, 'g':1.0, 'h':1.8}
+    fwhm_deg = {'f':7.0, 'g':7.0, 'h':5.0}
+    final_fwhm_deg = {'f':7.0, 'g':7.0, 'h':7.0}
+    cl={}
+    pl.figure(1)
+    pl.clf()
+    xlim = [10,700]
+    ylim = [1e-7, 3e-4]
+    for k in chunks:
+        print k
+        nmap = get_hpix(quick=True,name=k)
+        mask = mask_from_map(nmap, fwhm_deg=fwhm_deg[k], final_fwhm_deg=final_fwhm_deg[k], thresh=thresh[k])
+#        mean_nmap = np.mean(nmap[np.where(mask!=0)[0]])
+        mean_nmap = np.mean(nmap[np.where(mask>0.5)[0]])
+        delta = (nmap-mean_nmap)/mean_nmap
+        hp.mollview(hp.smoothing(delta*mask,fwhm=1.*np.pi/180.),title=k,min=-0.3,max=0.3)
+        continue
+        this_cl = hp.anafast(delta*mask)/np.mean(mask**2.)
+        l=np.arange(len(this_cl))
+        # smooth in l*cl
+        lcl = this_cl*l
+        sm_lcl = np.zeros_like(lcl)
+        rbox = 15
+        for i in l:
+            imin = np.max([0,i-rbox])
+            imax = np.min([np.max(l), i+rbox])
+            sm_lcl[i]=np.mean(lcl[imin:imax])
+#        cl[k:this_cl]
+#        pl.loglog(l,this_cl,linewidth=2)
+        pl.loglog(l,sm_lcl,linewidth=2)
+        pdb.set_trace()
+    pl.xlim(xlim)
+#    pl.ylim(ylim)
+    pl.legend(chunks)
+    pl.xlabel('L')
+    pl.ylabel('L*CL')
+#    pl.ylabel('CL')
