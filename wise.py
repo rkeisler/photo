@@ -728,11 +728,8 @@ def study_cfhtls_match_rad():
     import cfhtls
     print '...loading CFHTLS...'
     ra_c, dec_c, z_c, i_c = cfhtls.parse_cfhtls(1, quick=True)
-    type_c = np.zeros_like(z_c)
-    type_c[np.where((z_c<0)|(z_c>5))[0]]=1
     print '...loading WISE in CFHTLS...'
     ra,dec,w1,w2,w3,w4 = pickle.load(open('/Users/rkeisler/wise_in_cfhtls_f1.pkl','r'))
-
     from scipy.spatial import KDTree
     print '...building KDTree...'
     tree = KDTree(np.vstack((ra_c, dec_c)).T)
