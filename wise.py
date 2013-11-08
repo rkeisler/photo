@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pylab as pl
 pl.ion()
 import pdb
-import pickle
-import pdb
+import cPickle as pickle
+import ipdb
 
 wise_datapath='/home/rkeisler/wise/'
 
@@ -720,8 +720,30 @@ def get_wise_in_cfhtls(field='f1'):
     w3 = np.concatenate(w3)
     w4 = np.concatenate(w4)
 
-    np.save(wise_datapath+'/wise_in_cfhtls_'+field+'.npy', np.vstack((ra,dec,w1,w2,w3,w4)))
+    pickle.dump((ra, dec, w1, w2, w3, w4), open(wise_datapath+'/wise_in_cfhtls_'+field+'.pkl','w'))
 
     
-        
     
+def study_cfhtls_match_rad():
+    import cfhtls
+    print '...loading CFHTLS...'
+    ra_c, dec_c, z_c, i_c = cfhtls.parse_cfhtls(1, quick=True)
+    type_c = np.zeros_like(z_c)
+    type_c[np.where((z_c<0)|(z_c>5))[0]]=1
+    print '...loading WISE in CFHTLS...'
+    ra,dec,w1,w2,w3,w4 = pickle.load(open('/Users/rkeisler/wise_in_cfhtls_f1.pkl','r'))
+
+    from scipy.spatial import KDTree
+    print '...building KDTree...'
+    tree = KDTree(np.vstack((ra_c, dec_c)).T)
+    print '...querying tree...'
+    x = tree.query(np.vstack((ra, dec)).T)
+    dist_arcsec = x[0]*3600.
+    ind_c = x[1]
+
+    my_wise_color = w2-w4-0.7*w1
+    wh_wise_cut = np.where((w1>16)&(w1<17)&(my_wise_color>-5.0)&(my_wise_color<-3.5))[0]
+    ind_wise_cut = ind_c[wh_wise_cut]
+    ipdb.set_trace()
+
+        
