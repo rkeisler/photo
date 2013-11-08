@@ -3,6 +3,7 @@ import matplotlib.pylab as pl
 pl.ion()
 import pdb
 import pickle
+import pdb
 
 wise_datapath='/home/rkeisler/wise/'
 
@@ -678,3 +679,49 @@ def many_spectra():
     pl.xlabel('L')
     pl.ylabel('L*CL')
 #    pl.ylabel('CL')
+
+
+def get_wise_in_cfhtls(field='f1'):
+    from glob import glob
+
+    if field=='f1':
+        ra_min = 30.2777134
+        ra_max = 38.7223038
+        dec_min = -11.128138
+        dec_max = -3.8051642
+        parts = ['22','23','24','25']
+
+    ra = []
+    dec = []
+    w1 = []
+    w2 = []
+    w3 = []
+    w4 = []
+    for part in parts:
+        print part
+        files = glob(wise_datapath+'/allsky/wise-allsky-cat-part'+part+'*.npy')
+        for file in files:
+            x = np.load(file)
+            ra_tmp = x[:,0]
+            dec_tmp = x[:,1]
+            wh = np.where((ra_tmp>ra_min) & (ra_tmp<ra_max) & (dec_tmp>dec_min) & (dec_tmp<dec_max))[0]
+            if len(wh)==0: continue
+            ra.append(ra_tmp[wh])
+            dec.append(dec_tmp[wh])
+            w1.append(x[wh,2])
+            w2.append(x[wh,3])
+            w3.append(x[wh,4])
+            w4.append(x[wh,5])            
+            
+    ra = np.concatenate(ra)
+    dec = np.concatenate(dec)
+    w1 = np.concatenate(w1)
+    w2 = np.concatenate(w2)
+    w3 = np.concatenate(w3)
+    w4 = np.concatenate(w4)
+
+    np.save(wise_datapath+'/wise_in_cfhtls_'+field+'.npy', np.vstack((ra,dec,w1,w2,w3,w4)))
+
+    
+        
+    
