@@ -606,7 +606,7 @@ def make_many_hpix(nside=2**8):
                           cB_min=v['cb_min'], cB_max=v['cb_max'], 
                           name=k, quick=False)
 
-def mask_from_map(nmap, fwhm_deg=3.0, final_fwhm_deg=7.0, 
+def mask_from_map(nmap, fwhm_deg=3.0, final_fwhm_deg=5.0, 
                   thresh_min=0.9, thresh_max=3.0,
                   lat_gal_cut=20., ecl_pole_rad=20.,
                   coord='G'):
@@ -626,6 +626,7 @@ def mask_from_map(nmap, fwhm_deg=3.0, final_fwhm_deg=7.0,
     mask[wh_gal]=0.
 
     # mask out the ecliptic poles
+    # actually, isn't the coverage *better* at the poles??
     r = hp.Rotator(coord=[coord,'E'])  # transforms to ecliptic
     theta_ecl, phi_ecl = r(theta_c, phi_c)
     lat_ecl_deg = (np.pi/2.-theta_ecl)*180./np.pi
@@ -641,10 +642,11 @@ def mask_from_map(nmap, fwhm_deg=3.0, final_fwhm_deg=7.0,
     mask[wh]=0.
     wh=np.where((sm>(thresh_max*np.median(sm))))[0]
     mask[wh]=0.
-    #hp.mollview(sm*mask);ipdb.set_trace()    
-    # apply a  final smoothing
+
+    # apply a  final smoothing/threshold/smoothing
     mask = hp.smoothing(mask, fwhm=final_fwhm_deg*np.pi/180.)
     #hp.mollview(mask);ipdb.set_trace()
+    mask = hp.smoothing(mask>0.95, fwhm=0.5*final_fwhm_deg*np.pi/180.)
     if False:
         hp.mollview(mask*nmap)
         pdb.set_trace()
