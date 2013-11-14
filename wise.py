@@ -607,7 +607,8 @@ def make_many_hpix(nside=2**8):
                           name=k, quick=False)
 
 def mask_from_map(nmap, fwhm_deg=7.0, final_fwhm_deg=7.0, 
-                  thresh=1.4, lat_gal_cut=20., ecl_pole_rad=15.):
+                  thresh=1.4, lat_gal_cut=20., ecl_pole_rad=15.,
+                  coord='G'):
 
     import healpy as hp
     mask = np.ones_like(nmap)
@@ -617,14 +618,14 @@ def mask_from_map(nmap, fwhm_deg=7.0, final_fwhm_deg=7.0,
     nside = hp.npix2nside(npix)
     ipix = np.arange(npix)
     theta_c, phi_c = hp.pix2ang(nside, ipix, nest=False)
-    r = hp.Rotator(coord=['C','G'])  # transforms celestial to galactic
+    r = hp.Rotator(coord=[coord,'G'])  # transforms to galactic
     theta_gal, phi_gal = r(theta_c, phi_c)
     lat_gal_deg = (np.pi/2.-theta_gal)*180./np.pi
     wh_gal = np.where(np.abs(lat_gal_deg)<lat_gal_cut)[0]
     mask[wh_gal]=0.
               
     # mask out the ecliptic poles
-    r = hp.Rotator(coord=['C','E'])  # transforms celestial to galactic
+    r = hp.Rotator(coord=[coord,'E'])  # transforms to ecliptic
     theta_ecl, phi_ecl = r(theta_c, phi_c)
     lat_ecl_deg = (np.pi/2.-theta_ecl)*180./np.pi
     wh_ecl_pole = np.where(np.abs(np.abs(lat_ecl_deg)-90.)<ecl_pole_rad)[0]
