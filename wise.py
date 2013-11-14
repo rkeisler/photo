@@ -542,10 +542,10 @@ def study_dndz_interactive():
             #pl.plot(zcen, ang_sound*np.max(n)/4.5, 'b', linewidth=2)
             #print 30./1e3/dang*180./np.pi*3600. # galaxy size
 
-def get_hpix(nside=2**8, cA_min = 17.20, cA_max = 17.48,
-              cB_min = -5.20, cB_max = -3.99, name='h', 
-             quick=False):
-    savename = '/home/rkeisler/wise/hpix_nside%i_'%nside+name+'.pkl'
+def get_hpix(nside=2**9, cA_min = 16.0, cA_max = 17.0,
+             cB_min = -5.0, cB_max = -3.5, name='default',
+             coord='G', quick=False):
+    savename = '/home/rkeisler/wise/hpix_'+coord+'_nside%i_'%nside+name+'.pkl'
     if quick: return pickle.load(open(savename,'r'))
 
     import healpy as hp
@@ -569,7 +569,15 @@ def get_hpix(nside=2**8, cA_min = 17.20, cA_max = 17.48,
         cB = w2-w4-0.7*w1    
         wh_cut = np.where((cA>=cA_min) & (cA<=cA_max) & (cB>=cB_min) & (cB<=cB_max))[0]
         phi_cut = ra[wh_cut]*np.pi/180.
-        th_cut = np.pi/2.-dec[wh_cut]*np.pi/180. 
+        th_cut = np.pi/2.-dec[wh_cut]*np.pi/180.
+
+        # if desired, convert from celestial coordinates.
+        if (coord!='C'):
+            th_cut_old = th_cut.copy()
+            phi_cut_old = phi_cut.copy()
+            r = hp.Rotator(coord=['C',coord])
+            th_cut, phi_cut = r(th_cut_old, phi_cut_old)
+        
         ind = hp.ang2pix(nside, th_cut, phi_cut)
         for thing in ind: nmap[thing]+=1
     pickle.dump(nmap, open(savename,'w'))
