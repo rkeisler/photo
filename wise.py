@@ -607,7 +607,7 @@ def make_many_hpix(nside=2**8):
                           name=k, quick=False)
 
 def mask_from_map(nmap, fwhm_deg=7.0, final_fwhm_deg=7.0, 
-                  thresh=1.4, lat_gal_cut=20., ecl_pole_rad=15.,
+                  thresh=0.8, lat_gal_cut=20., ecl_pole_rad=20.,
                   coord='G'):
 
     import healpy as hp
@@ -623,7 +623,7 @@ def mask_from_map(nmap, fwhm_deg=7.0, final_fwhm_deg=7.0,
     lat_gal_deg = (np.pi/2.-theta_gal)*180./np.pi
     wh_gal = np.where(np.abs(lat_gal_deg)<lat_gal_cut)[0]
     mask[wh_gal]=0.
-              
+
     # mask out the ecliptic poles
     r = hp.Rotator(coord=[coord,'E'])  # transforms to ecliptic
     theta_ecl, phi_ecl = r(theta_c, phi_c)
@@ -637,6 +637,7 @@ def mask_from_map(nmap, fwhm_deg=7.0, final_fwhm_deg=7.0,
     # mask according to <nmap>, which is a proxy for coverage.
     sm = hp.smoothing(nmap*mask, fwhm=fwhm_deg*np.pi/180.)
     wh=np.where((sm<(thresh*np.median(sm))))[0]
+
     mask[wh]=0.
 
     # apply a  final smoothing
