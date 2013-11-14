@@ -606,8 +606,9 @@ def make_many_hpix(nside=2**8):
                           cB_min=v['cb_min'], cB_max=v['cb_max'], 
                           name=k, quick=False)
 
-def mask_from_map(nmap, fwhm_deg=7.0, final_fwhm_deg=7.0, 
-                  thresh=0.8, lat_gal_cut=20., ecl_pole_rad=20.,
+def mask_from_map(nmap, fwhm_deg=3.0, final_fwhm_deg=7.0, 
+                  thresh_min=0.9, thresh_max=3.0,
+                  lat_gal_cut=20., ecl_pole_rad=20.,
                   coord='G'):
 
     import healpy as hp
@@ -636,13 +637,14 @@ def mask_from_map(nmap, fwhm_deg=7.0, final_fwhm_deg=7.0,
 
     # mask according to <nmap>, which is a proxy for coverage.
     sm = hp.smoothing(nmap*mask, fwhm=fwhm_deg*np.pi/180.)
-    wh=np.where((sm<(thresh*np.median(sm))))[0]
-
+    wh=np.where((sm<(thresh_min*np.median(sm))))[0]
     mask[wh]=0.
-
+    wh=np.where((sm>(thresh_max*np.median(sm))))[0]
+    mask[wh]=0.
+    #hp.mollview(sm*mask);ipdb.set_trace()    
     # apply a  final smoothing
     mask = hp.smoothing(mask, fwhm=final_fwhm_deg*np.pi/180.)
-
+    #hp.mollview(mask);ipdb.set_trace()
     if False:
         hp.mollview(mask*nmap)
         pdb.set_trace()
@@ -756,3 +758,70 @@ def study_cfhtls_match_rad():
     ipdb.set_trace()
 
         
+def correlate_with_planck_lensing():
+    import pyfits
+    import healpy as hp
+    # get wise stuff
+    print '...loading wise...'
+    nmap = get_hpix(nside=2**9, cA_min = 16.0, cA_max = 17.0,
+                    cB_min = -5.0, cB_max = -3.5, name='default',
+                    coord='G', quick=True)
+    mask_wise = mask_from_map(nmap, coord='G',thresh_min=0.9, thresh_max=2.3)
+    whok = np.where(mask_wise>0.5)[0]
+    nbar = np.median(nmap[whok])
+    delta = (1.*nmap-nbar)/nbar
+
+    # get planck lensing stuff
+    print '...loading planck...'
+    pdatadir='/home/rkeisler/cib_delens/planck_data/'
+    phi = pyfits.getdata(pdatadir+'COM_CompMap_Lensing_2048_R1.10.fits',1)['PHIBAR']
+    phi = hp.reorder(phi, out='RING', inp='NESTED')
+    mask_lens = pyfits.getdata(pdatadir+'COM_CompMap_Lensing_2048_R1.10.fits')['MASK']
+    mask_lens = hp.reorder(mask_lens, out='RING', inp='NESTED')
+    # downgrade to wise resolution
+    print '...down-grading...'
+    nside_wise = hp.npix2nside(len(delta))
+    nside_planck = hp.npix2nside(len(phi))
+    phi_dg = hp.ud_grade(phi, nside_wise)
+    mask_lens_dg = hp.ud_grade(mask_lens, nside_wise)
+
+    mask = mask_wise*mask_lens_dg
+    print '...anafast...'
+    cl_phi_delta = hp.anafast(mask*delta, map2=mask*phi_dg)/np.mean(mask**2.)
+    # correct for phi transfer function
+    tf_phi = pyfits.getdata(pdatadir+'COM_CompMap_Lensing_2048_R1.10.fits',2)['RLPP']
+    cl_phi_delta /= tf_phi[0:len(cl_phi_delta)]
+    nl = len(cl_phi_delta)
+    ll = np.arange(nl)
+
+    lmin=100.
+    lmax=1500.
+    dl=100.    
+    nbins = np.ceil((lmax-lmin)/dl)
+    llo = np.linspace(lmin, lmax, nbins)
+    lcen = llo+0.5*dl
+    delta_l_factor = 0.5
+    cl_phi_delta_theory = np.load('/data/rkeisler/cl_phi_delta_mz0p65_sz0p25_b1p0.npy')
+    cl_phi_delta_theory = cl_phi_delta_theory[0:len(cl_phi_delta)]
+    y = cl_phi_delta/cl_phi_delta_theory
+    #y = cl_phi_delta*ll**4.
+    ybin = np.zeros(nbins)
+    yerr = np.zeros(nbins)
+    for i in np.arange(nbins):
+        wh=np.where((ll>llo[i])&(ll<=(llo[i]+dl)))[0]
+        ybin[i] = np.mean(y[wh])
+        nl_tmp = 1.*len(wh)*delta_l_factor
+        yerr[i] = np.std(y[wh])/np.sqrt(nl_tmp)
+
+    pl.clf(); pl.errorbar(lcen, ybin, yerr=yerr)
+    fs=17
+    pl.xlabel('L',fontsize=fs)
+    pl.ylabel(r'$C^{\phi \delta}_{\rm{meas}} / C^{\phi \delta}_{\rm{theory}}$',fontsize=fs)
+    pl.title(r'Assuming dN/dz=N(0.65,0.25), b=1.0',fontsize=fs-1)
+    pl.plot([0,1600],[0,0],'k--')
+    pl.plot([0,1600],[1,1],'k--')
+    pl.xlim(0,max(lcen)+dl/2.)
+    
+    
+    
+    ipdb.set_trace()
