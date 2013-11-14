@@ -571,7 +571,7 @@ def get_hpix(nside=2**9, cA_min = 16.0, cA_max = 17.0,
         phi_cut = ra[wh_cut]*np.pi/180.
         th_cut = np.pi/2.-dec[wh_cut]*np.pi/180.
 
-        # convert from celestial to galactic coordinates.
+        # if desired, convert from celestial coordinates.
         if (coord!='C'):
             th_cut_old = th_cut.copy()
             phi_cut_old = phi_cut.copy()
