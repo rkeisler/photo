@@ -738,6 +738,8 @@ def study_cfhtls_match_rad():
     dist_arcsec = x[0]*3600.
     ind_c = x[1]
 
+    pickle.dump((tree, ind_c, dist_arcsec), open('tree_ind_dist.pkl','w'))
+
     my_wise_color = w2-w4-0.7*w1
     wh_wise_cut = np.where((w1>16)&(w1<17)&(my_wise_color>-5.0)&(my_wise_color<-3.5))[0]
     ind_wise_cut = ind_c[wh_wise_cut]
