@@ -1,3 +1,9 @@
+use new data release, and use brighter sources for more uniform coverage.  e.g. 16.0<W1<16.7 and then coverage>16 (which is true for all but ~60 deg2 or ~0.15% of the sky), and you'll have ~100% completeness.  it'd be good to use the fitting formula for completeness to put a number on this.
+
+http://wise2.ipac.caltech.edu/docs/release/allwise/expsup/sec4_2.html
+
+I should show that results are (in)sensitive to including/excluding the galactic center (bulge).
+
 - you might use "CAMB sources", which, given some dn/dz or n(z), provides auto-spectra (g-g) and cross-spectrum with CMB lensing (g-phi).
 
 - actually try to train a WISE photo-z using COSMOS photo-z.  shape information from WISE.
