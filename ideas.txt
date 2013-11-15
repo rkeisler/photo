@@ -1,3 +1,5 @@
+probably should switch to using *just* w1 for my cut, rather than also a w1/w2/w3/w4 color cut, since the w2/w3/w4 coverage is less uniform.  certainly the w3/w4 data shouldn't be used.
+
 use new data release, and use brighter sources for more uniform coverage.  e.g. 16.0<W1<16.7 and then coverage>16 (which is true for all but ~60 deg2 or ~0.15% of the sky), and you'll have ~100% completeness.  it'd be good to use the fitting formula for completeness to put a number on this.
 
 http://wise2.ipac.caltech.edu/docs/release/allwise/expsup/sec4_2.html
