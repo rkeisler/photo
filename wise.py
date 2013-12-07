@@ -213,8 +213,12 @@ def boil_down_wise(filename=wise_datapath+'wise-allsky-cat-part44',
         thisX = np.zeros(nsave)
         for k in w_ind:
             valtmp = tmp[w_ind[k]]
-            if valtmp=='': valtmp=default_mag
-            else: valtmp=float(valtmp)
+            if k=='cc_flags':
+                if valtmp=='': valtmp=1
+                else valtmp != valtmp=='0000'
+            else:
+                if valtmp=='': valtmp=default_mag
+                else: valtmp=float(valtmp)
             thisX[np_ind[k]]=valtmp
         X.append(thisX)        
         if (subcount>=npersub):
@@ -228,14 +232,14 @@ def boil_down_wise(filename=wise_datapath+'wise-allsky-cat-part44',
 def wise_cat_ind():
     return {'ra':1, 'dec':2,
             'w1':16, 'w2':20, 'w3':24, 'w4':28,
-            'j':273, 'h':275, 'k':277,
-            'w1sn':18, 'w1cov':54, 'cc_flags':55}
+            'j':287, 'h':289, 'k':291,
+            'cc_flags':55}
 
 def np_array_ind():
     tmp={'ra':0, 'dec':1,
          'w1':2, 'w2':3, 'w3':4, 'w4':5,
          'j':6, 'h':7, 'k':8,
-         'w1sn':9, 'w1cov':10, 'cc_flags':11}
+         'cc_flags':9}
     if len(tmp)!=max(tmp.values())+1:
         print 'huh?'
         pdb.set_trace()
@@ -286,7 +290,7 @@ def process_wise_dec_strip(part):
     print '************************************************'
 
 
-def process_many(imin_incl=1, imax_incl=50):
+def process_many(imin_incl=1, imax_incl=48):
     for i in range(imin_incl, imax_incl+1): process_wise_dec_strip(i)
 
 
