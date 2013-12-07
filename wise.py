@@ -229,14 +229,13 @@ def wise_cat_ind():
     return {'ra':1, 'dec':2,
             'w1':16, 'w2':20, 'w3':24, 'w4':28,
             'j':273, 'h':275, 'k':277,
-            'w1sn':18, 'w1cov':54}
-
+            'w1sn':18, 'w1cov':54, 'cc_flags':55}
 
 def np_array_ind():
     tmp={'ra':0, 'dec':1,
          'w1':2, 'w2':3, 'w3':4, 'w4':5,
          'j':6, 'h':7, 'k':8,
-         'w1sn':9, 'w1cov':10}
+         'w1sn':9, 'w1cov':10, 'cc_flags':11}
     if len(tmp)!=max(tmp.values())+1:
         print 'huh?'
         pdb.set_trace()
@@ -248,13 +247,13 @@ def process_wise_dec_strip(part):
     from time import time
     timeo = time()
 
-    savename_prefix = 'wise-allsky-cat-part%02d'%part
+    savename_prefix = 'wise-allwise-cat-part%02d'%part
     savepath = '/home/rkeisler/wise/tmp/'
     bz_name = savepath+savename_prefix+'.bz2'
     unzip_name = savepath+savename_prefix
 
     print '...downloading...'
-    this_address = 'http://irsadist.ipac.caltech.edu/wise-allsky/'+savename_prefix+'.bz2'
+    this_address = 'http://irsadist.ipac.caltech.edu/wise-allwise/'+savename_prefix+'.bz2'
     cmd = 'curl -o '+bz_name+' '+this_address
     print cmd
     timea = time()
@@ -271,10 +270,10 @@ def process_wise_dec_strip(part):
     print 'that took ',timeb-timea
 
     print '...reducing...'
-    print "boil_down_wise(filename=unzip_name, savepath='/home/rkeisler/wise/allsky/')"
+    print "boil_down_wise(filename=unzip_name, savepath='/home/rkeisler/wise/allwise/')"
     print unzip_name
     timea = time()
-    boil_down_wise(filename=unzip_name, savepath='/home/rkeisler/wise/allsky/')
+    boil_down_wise(filename=unzip_name, savepath='/home/rkeisler/wise/allwise/')
     timeb = time()
     print 'that took ',timeb-timea
 
@@ -550,7 +549,7 @@ def get_hpix(nside=2**9, cA_min = 16.0, cA_max = 17.0,
 
     import healpy as hp
     from glob import glob
-    files = glob('/home/rkeisler/wise/allsky/*npy')
+    files = glob('/home/rkeisler/wise/allwise/*npy')
     npix = hp.nside2npix(nside)
     nmap = np.zeros(npix)
     count=0
@@ -713,7 +712,7 @@ def get_wise_in_cfhtls(field='f1'):
     w4 = []
     for part in parts:
         print part
-        files = glob(wise_datapath+'/allsky/wise-allsky-cat-part'+part+'*.npy')
+        files = glob(wise_datapath+'/allwise/wise-allwise-cat-part'+part+'*.npy')
         for file in files:
             x = np.load(file)
             ra_tmp = x[:,0]
