@@ -215,7 +215,7 @@ def boil_down_wise(filename=wise_datapath+'wise-allsky-cat-part44',
             valtmp = tmp[w_ind[k]]
             if k=='cc_flags':
                 if valtmp=='': valtmp=1
-                else valtmp != valtmp=='0000'
+                else: valtmp = not(valtmp=='0000')
             else:
                 if valtmp=='': valtmp=default_mag
                 else: valtmp=float(valtmp)
