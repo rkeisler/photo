@@ -545,10 +545,10 @@ def study_dndz_interactive():
             #pl.plot(zcen, ang_sound*np.max(n)/4.5, 'b', linewidth=2)
             #print 30./1e3/dang*180./np.pi*3600. # galaxy size
 
-def get_hpix(nside=2**9, cA_min = 16.0, cA_max = 17.0,
-             cB_min = -5.0, cB_max = -3.5, name='default',
+def get_hpix(nside=2**9, w1_min = 16.0, w1_max = 16.7,
+             col_min = -999.0, col_max = 999.0, 
              coord='G', quick=False):
-    savename = '/home/rkeisler/wise/hpix_'+coord+'_nside%i_'%nside+name+'.pkl'
+    savename = '/home/rkeisler/wise/hpix_'+coord+'_nside%i_w1_%3.1f_%3.1f'%(nside, w1_min, w1_max)+'.pkl'
     if quick: return pickle.load(open(savename,'r'))
 
     import healpy as hp
@@ -568,9 +568,10 @@ def get_hpix(nside=2**9, cA_min = 16.0, cA_max = 17.0,
         w2=x[:,3]
         w3=x[:,4]
         w4=x[:,5]
-        cA = w1
-        cB = w2-w4-0.7*w1    
-        wh_cut = np.where((cA>=cA_min) & (cA<=cA_max) & (cB>=cB_min) & (cB<=cB_max))[0]
+        cc_flags=x[:,9]
+        col = w2-w4-0.7*w1
+        wh_cut = np.where((w1>=w1_min) & (w1<=w1_max) & (cc_flags==0))[0]
+        #wh_cut = np.where((w1>=w1_min) & (w1<=w1_max) & (col>=col_min) & (col<=col_max))[0]        
         phi_cut = ra[wh_cut]*np.pi/180.
         th_cut = np.pi/2.-dec[wh_cut]*np.pi/180.
 
@@ -598,16 +599,19 @@ def chunk_dict():
     return dd
 
 
-def make_many_hpix(nside=2**8):
-    chunkdic = chunk_dict()
-    keys = ['f','g','h']
-    for k in keys:
-#    for k,v in chunkdic.iteritems():
-        v = chunkdic[k]
+def make_many_hpix():
+    nside=2**9
+    dicts = [{'w1_min':15.7, 'w1_max':16.7},
+             {'w1_min':16.0, 'w1_max':16.7},
+             {'w1_min':15.7, 'w1_max':18.0},
+             {'w1_min':16.7, 'w1_max':18.0},
+             {'w1_min':16.0, 'w1_max':18.0}]             
+
+    for d in dicts:
         this_map=get_hpix(nside=nside, 
-                          cA_min=v['ca_min'], cA_max=v['ca_max'],
-                          cB_min=v['cb_min'], cB_max=v['cb_max'], 
-                          name=k, quick=False)
+                          w1_min=d['w1_min'], w1_max=d['w1_max'],
+                          quick=False)
+        
 
 def mask_from_map(nmap, fwhm_deg=3.0, final_fwhm_deg=5.0, 
                   thresh_min=0.9, thresh_max=3.0,
@@ -768,8 +772,7 @@ def correlate_with_planck_lensing():
     import healpy as hp
     # get wise stuff
     print '...loading wise...'
-    nmap = get_hpix(nside=2**9, cA_min = 16.0, cA_max = 17.0,
-                    cB_min = -5.0, cB_max = -3.5, name='default',
+    nmap = get_hpix(nside=2**9, w1_min = 16.0, w1_max = 16.7,
                     coord='G', quick=True)
     mask_wise = mask_from_map(nmap, coord='G',thresh_min=0.9, thresh_max=2.3)
     whok = np.where(mask_wise>0.5)[0]
@@ -826,6 +829,7 @@ def correlate_with_planck_lensing():
     pl.plot([0,1600],[0,0],'k--')
     pl.plot([0,1600],[1,1],'k--')
     pl.xlim(0,max(lcen)+dl/2.)
+    print np.sqrt(np.sum((ybin/yerr)**2.))
     
     
     
