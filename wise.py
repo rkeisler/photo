@@ -601,12 +601,13 @@ def chunk_dict():
 
 def make_many_hpix():
     nside=2**9
-    dicts = [{'w1_min':15.7, 'w1_max':16.7},
-             {'w1_min':16.0, 'w1_max':16.7},
-             {'w1_min':15.7, 'w1_max':18.0},
-             {'w1_min':16.7, 'w1_max':18.0},
-             {'w1_min':16.0, 'w1_max':18.0}]             
-
+    dicts = [{'w1_min':15.8, 'w1_max':16.8},
+             {'w1_min':16.0, 'w1_max':16.8},
+             {'w1_min':16.4, 'w1_max':16.8},             
+             {'w1_min':15.8, 'w1_max':18.0},
+             {'w1_min':16.8, 'w1_max':18.0},
+             {'w1_min':16.0, 'w1_max':18.0},
+             {'w1_min':14.0, 'w1_max':15.8}]
     for d in dicts:
         this_map=get_hpix(nside=nside, 
                           w1_min=d['w1_min'], w1_max=d['w1_max'],
@@ -615,7 +616,7 @@ def make_many_hpix():
 
 def mask_from_map(nmap, fwhm_deg=3.0, final_fwhm_deg=5.0, 
                   thresh_min=0.9, thresh_max=3.0,
-                  lat_gal_cut=20., ecl_pole_rad=20.,
+                  lat_gal_cut=20., ecl_pole_rad=5.,
                   coord='G'):
 
     import healpy as hp
@@ -767,12 +768,12 @@ def study_cfhtls_match_rad():
     ipdb.set_trace()
 
         
-def correlate_with_planck_lensing():
+def correlate_with_planck_lensing(w1_min=15.8, w1_max=16.8):
     import pyfits
     import healpy as hp
     # get wise stuff
     print '...loading wise...'
-    nmap = get_hpix(nside=2**9, w1_min = 16.0, w1_max = 16.7,
+    nmap = get_hpix(nside=2**9, w1_min=w1_min, w1_max=w1_max,
                     coord='G', quick=True)
     mask_wise = mask_from_map(nmap, coord='G',thresh_min=0.9, thresh_max=2.3)
     whok = np.where(mask_wise>0.5)[0]
@@ -831,6 +832,5 @@ def correlate_with_planck_lensing():
     pl.xlim(0,max(lcen)+dl/2.)
     print np.sqrt(np.sum((ybin/yerr)**2.))
     
-    
-    
+    hp.mollview(delta*mask)
     ipdb.set_trace()
